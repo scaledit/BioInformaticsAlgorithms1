@@ -2,10 +2,12 @@ package bioinformatics.algorithms.findinghiddenmessages.ReadData
 
 import org.apache.spark.sql.SparkSession
 
+import org.apache.spark.sql.types._
+
 object ReadSequence {
 	
 	def readSingleSequence():Unit = {
-	val logFile = "/Users/smysore/Downloads/grch38p2.csv" // Should be some file on your system
+	val logFile = "/Users/smysore/Downloads/bactexample.csv" // Should be some file on your system
 	val spark = SparkSession.builder
 				.appName("DNAsa")
   		.master("local[4]")
@@ -15,11 +17,14 @@ object ReadSequence {
 		spark.conf.set("spark.executor.memory", "2g")
 		//get all settings
 		val configMap:Map[String, String] = spark.conf.getAll
+		import spark.implicits._
 		
 	val logData = spark.read.textFile(logFile).cache()
-	val numAs = logData.filter(line => line.contains("a")).count()
-	val numBs = logData.filter(line => line.contains("b")).count()
-	println(s"Lines with a: $numAs, Lines with b: $numBs")
+	
+		val alpha = logData.flatMap(line => line.split("") )
+		
+		alpha.rdd.map(char => (char,1)).reduceByKey(_+_).foreach(println)
+	
 	
 	spark.stop()
 	}
