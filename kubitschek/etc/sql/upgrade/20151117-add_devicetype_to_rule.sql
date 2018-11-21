@@ -1,0 +1,5 @@
+BEGIN;
+ALTER TABLE rules ADD COLUMN device_type varchar(36) NOT NULL DEFAULT 'mobile';
+ALTER TABLE rules ALTER COLUMN device_type DROP DEFAULT;
+COMMIT;
+

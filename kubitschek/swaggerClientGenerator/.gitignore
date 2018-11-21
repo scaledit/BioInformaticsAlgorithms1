@@ -1,0 +1,24 @@
+*.class
+*.log
+
+# .DS_Store should really be in mac people's .gitignore-global, but leaving here for now
+.DS_Store
+
+# sbt specific
+.cache
+.history
+.lib/
+dist/
+target/
+lib_managed/
+src_managed/
+node_modules/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+
+# Intellij specific
+.idea*/

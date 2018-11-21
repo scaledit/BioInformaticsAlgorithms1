@@ -1,8 +1,7 @@
 package bioinformatics.algorithms.findinghiddenmessages.ReadData
 
 import org.apache.spark.sql.SparkSession
-
-import org.apache.spark.sql.types._
+import bioinformatics.algorithms.findinghiddenmessages.Models.BoyerMoore
 
 object ReadSequence {
 	
@@ -13,20 +12,35 @@ object ReadSequence {
   		.master("local[4]")
 				.getOrCreate()
 		//set new runtime options
-		spark.conf.set("spark.sql.shuffle.partitions", 6)
-		spark.conf.set("spark.executor.memory", "2g")
+		spark.conf.set("spark.sql.shuffle.partitions", 4)
+		spark.conf.set("spark.executor.memory", "4g")
 		//get all settings
-		val configMap:Map[String, String] = spark.conf.getAll
+		
 		import spark.implicits._
 		
-	val logData = spark.read.textFile(logFile).cache()
+	val alphaDF = spark.read.textFile(logFile).cache()
 	
-		val alpha = logData.flatMap(line => line.split("") )
+		for (windowSize <- 1 to 3) yield {
+		val ngrams = alphaDF.mapPartitions(
+			_.toList.mkString("")
+			.replace("\n","")
+			.replace(" ","")
+			.sliding(windowSize)
+		)
 		
-		alpha.rdd.map(char => (char,1)).reduceByKey(_+_).foreach(println)
-	
-	
-	spark.stop()
+			val charArray = ngrams.toString.toSeq.toArray
+			
+			BoyerMoore(charArray,windowSize)
+			
+		
+		
+		val nGramCount = ngrams.rdd.map(ng => (ng,1)).reduceByKey(_+_)
+		
+		nGramCount.coalesce(1,true)
+			.saveAsTextFile(s"/Users/smysore/Downloads/ngram_$windowSize")
+		}
+		
+		spark.stop()
 	}
 	
 }

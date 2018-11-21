@@ -115,3 +115,5 @@ fabric.properties
 .idea/workspace.xml
 *.xml
 project/
+.idea/
+Would skip repository BioInformaticsAlgorithms1/

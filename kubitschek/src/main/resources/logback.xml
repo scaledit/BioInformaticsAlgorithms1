@@ -1,0 +1,19 @@
+<configuration debug="true" scan="true" scanPeriod="30 seconds">
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <Pattern>%date{yyy-MM-dd HH:mm:ss z, UTC} [%thread] %-5level %logger{5} - %msg%n</Pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.ntoggle.humber" level="TRACE" />
+    <logger name="com.ntoggle.goldengate" level="TRACE" />
+    <logger name="com.ntoggle.kubitschek.estimation" level="TRACE" />
+
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+
+</configuration>
+

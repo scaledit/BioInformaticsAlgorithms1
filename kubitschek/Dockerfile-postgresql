@@ -1,0 +1,5 @@
+FROM postgres:9.4
+MAINTAINER Ashley Penney <apenney@ntoggle.com>
+
+ADD src/main/resources/ddl/setup-docker.sh /docker-entrypoint-initdb.d/setup_docker.sh
+ADD src/main/resources/ddl /ddl/

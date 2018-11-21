@@ -1,0 +1,51 @@
+machine:
+  java:
+    version: oraclejdk8
+  services:
+    - docker
+
+dependencies:
+  pre:
+    # Install sbt (via tee to account for sudo madness)
+    - echo "deb http://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+    - sudo apt-get update && sudo apt-get install sbt
+
+  override:
+    - sbt ";clean ;test:compile ;it:compile"
+    - cd swaggerClientGenerator && npm install && echo -e "registry=http://ntoggle.artifactoryonline.com/ntoggle/api/npm/UI\n_auth = ${AUTH_NPM}\nalways-auth = true\nemail = dave@ntoggle.com" > ~/.npmrc && sbt genAngularClient && cd ..
+
+## publish artifacts
+# NPM requires a new version for every publish, so 'npm publish' is removed as the last npm command here.
+# Either put it back as needed or manually run the 'npm publish'.
+deployment:
+  publish:
+    branch: master
+    commands:
+      - sbt publish
+      - cd swaggerClientGenerator && npm install && echo -e "registry=http://ntoggle.artifactoryonline.com/ntoggle/api/npm/UI\n_auth = ${AUTH_NPM}\nalways-auth = true\nemail = dave@ntoggle.com" > ~/.npmrc && sbt genAngularClient && cd src/main/public/js && npm install && npm pack
+      - sbt assembly
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS quay.io
+      - docker build --no-cache -t="quay.io/ntoggle/kubitschek:`cut  -d\"\\"\" -f 2 version.sbt`" .
+      - docker build --no-cache -t="quay.io/ntoggle/kubitschek_database:`cut  -d\"\\"\" -f 2 version.sbt`" -f Dockerfile-postgresql .
+      - docker push quay.io/ntoggle/kubitschek:`cut  -d"\"" -f 2 version.sbt`
+      - docker push quay.io/ntoggle/kubitschek_database:`cut  -d"\"" -f 2 version.sbt`
+    branch: develop
+    commands:
+      - sbt publish
+      - cd swaggerClientGenerator && npm install && echo -e "registry=http://ntoggle.artifactoryonline.com/ntoggle/api/npm/UI\n_auth = ${AUTH_NPM}\nalways-auth = true\nemail = dave@ntoggle.com" > ~/.npmrc && sbt genAngularClient && cd src/main/public/js && npm install && npm pack
+      - sbt assembly
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS quay.io
+      - docker build -t="quay.io/ntoggle/kubitschek:`cut  -d\"\\"\" -f 2 version.sbt`" .
+      - docker build -t="quay.io/ntoggle/kubitschek_database:`cut  -d\"\\"\" -f 2 version.sbt`" -f Dockerfile-postgresql .
+      - docker push quay.io/ntoggle/kubitschek:`cut  -d"\"" -f 2 version.sbt`
+      - docker push quay.io/ntoggle/kubitschek_database:`cut  -d"\"" -f 2 version.sbt`
+
+  release:
+    tag: /v[0-9]+\.[0-9]+\.[0-9]+/
+    commands:
+      - sbt assembly
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS quay.io
+      - docker build -t="quay.io/ntoggle/kubitschek:`cut  -d\"\\"\" -f 2 version.sbt`" .
+      - docker build -t="quay.io/ntoggle/kubitschek_database:`cut  -d\"\\"\" -f 2 version.sbt`" -f Dockerfile-postgresql .
+      - docker push quay.io/ntoggle/kubitschek:`cut  -d"\"" -f 2 version.sbt`
+      - docker push quay.io/ntoggle/kubitschek_database:`cut  -d"\"" -f 2 version.sbt`

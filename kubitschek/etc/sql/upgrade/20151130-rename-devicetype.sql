@@ -1,0 +1,1 @@
+ALTER TABLE rules RENAME COLUMN device_type TO traffic_type;

@@ -1,0 +1,540 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "nToggle Configuration API",
+    "description": "This is the API for configuring the demand partner and the supply for those demand\npartners.\n"
+  },
+  "host": "localhost:9000",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "basePath": "/api/v1",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "parameters": {
+    "limit": {
+      "name": "limit",
+      "in": "query",
+      "description": "the maximum number of items to be returned.",
+      "required": true,
+      "type": "string"
+    },
+    "offset": {
+      "name": "offset",
+      "in": "query",
+      "description": "the offset from the start of the list to be returned.",
+      "required": true,
+      "type": "string"
+    },
+    "dpId": {
+      "name": "dpId",
+      "in": "path",
+      "description": "the demand partner id",
+      "required": true,
+      "type": "string"
+    },
+    "dpIdInQuery": {
+      "name": "dpId",
+      "in": "query",
+      "description": "the demand partner id",
+      "required": false,
+      "type": "string"
+    },
+    "dpIdInQueryRequired": {
+      "name": "dpId",
+      "in": "query",
+      "description": "the demand partner id",
+      "required": true,
+      "type": "string"
+    },
+    "spId": {
+      "name": "spId",
+      "in": "path",
+      "description": "the supply partner id",
+      "required": true,
+      "type": "string"
+    },
+    "spIdInQuery": {
+      "name": "spId",
+      "in": "query",
+      "description": "the supply partner id",
+      "required": false,
+      "type": "string"
+    },
+    "spIdInQueryRequired": {
+      "name": "spId",
+      "in": "query",
+      "description": "the supply partner id",
+      "required": true,
+      "type": "string"
+    },
+    "ruleId": {
+      "name": "ruleId",
+      "in": "path",
+      "description": "the rule id",
+      "required": true,
+      "type": "string"
+    },
+    "versionId": {
+      "name": "versionId",
+      "in": "path",
+      "description": "the configuration version",
+      "required": true,
+      "type": "string"
+    },
+    "versionIdInQuery": {
+      "name": "versionId",
+      "in": "query",
+      "description": "the configuration version",
+      "required": true,
+      "type": "string"
+    }
+  },
+  "paths": {
+    "/demand-partners": {
+      "post": {
+        "tags": [
+          "demand-partner"
+        ],
+        "summary": "Add demand partner",
+        "description": "Adds a new demand partner for configuration management\n",
+        "parameters": [
+          {
+            "name": "demandPartner",
+            "in": "body",
+            "description": "the properties of the demand partner to be created",
+            "schema": {
+              "$ref": "#/definitions/CreateDemandPartnerRequest"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully added a new demand partner",
+            "schema": {
+              "$ref": "#/definitions/DemandPartnerResponse"
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/limit"
+          },
+          {
+            "$ref": "#/parameters/offset"
+          }
+        ],
+        "tags": [
+          "demand-partner"
+        ],
+        "summary": "View all demand partners",
+        "description": "View all demand partners in the system. May return an empty array.\n",
+        "responses": {
+          "200": {
+            "description": "All demand partners in the system. May be an empty array.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DemandPartnerResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          }
+        }
+      }
+    },
+    "/demand-partners/{dpId}": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/dpId"
+          }
+        ],
+        "tags": [
+          "demand-partner"
+        ],
+        "summary": "View demand partner",
+        "description": "View demand partner details\n",
+        "responses": {
+          "200": {
+            "description": "Demand partner details.",
+            "schema": {
+              "$ref": "#/definitions/DemandPartnerResponse"
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          },
+          "404": {
+            "description": "The specified demand partner was not found"
+          }
+        }
+      }
+    },
+    "/supply-partners": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/limit"
+          },
+          {
+            "$ref": "#/parameters/offset"
+          }
+        ],
+        "tags": [
+          "supply-partner"
+        ],
+        "summary": "View all supply partners",
+        "description": "View all supply partners. May return empty array.\n",
+        "responses": {
+          "200": {
+            "description": "All supply partners in the system. May be an empty array.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SupplyPartnerResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "supply-partner"
+        ],
+        "summary": "Add supply partner",
+        "description": "Adds a new supply partner for configuration management\n",
+        "parameters": [
+          {
+            "name": "supplyPartner",
+            "in": "body",
+            "description": "the properties of the supply partner to be created",
+            "schema": {
+              "$ref": "#/definitions/CreateSupplyPartnerRequest"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully added a new supply partner",
+            "schema": {
+              "$ref": "#/definitions/SupplyPartnerResponse"
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          }
+        }
+      }
+    },
+    "/demand-partners/{dpId}/supply-partners": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/dpId"
+          },
+          {
+            "$ref": "#/parameters/limit"
+          },
+          {
+            "$ref": "#/parameters/offset"
+          }
+        ],
+        "tags": [
+          "demand-partner"
+        ],
+        "summary": "View supply partners for a demand partner",
+        "description": "View the supply partners configured for a demand partner\n",
+        "responses": {
+          "200": {
+            "description": "Show all supply partners for a demand partner",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/RouterConfigurationResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          },
+          "404": {
+            "description": "The specified demand partner was not found",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          }
+        }
+      }
+    },
+    "/supply-partners/{spId}": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/spId"
+          }
+        ],
+        "tags": [
+          "supply-partner"
+        ],
+        "summary": "View supply partner",
+        "description": "View new supply partner details\n",
+        "responses": {
+          "200": {
+            "description": "Supply partner details.",
+            "schema": {
+              "$ref": "#/definitions/SupplyPartnerResponse"
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          },
+          "404": {
+            "description": "The specified supply partner was not found"
+          }
+        }
+      }
+    },
+    "/demand-partners/{dpId}/supply-partners/{spId}": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/dpId"
+          },
+          {
+            "$ref": "#/parameters/spId"
+          }
+        ],
+        "tags": [
+          "demand-partner",
+          "supply-partner"
+        ],
+        "summary": "View specific supply configuration for demand partner",
+        "description": "Returns the configuration of supply partner for the demand partner.",
+        "responses": {
+          "200": {
+            "description": "The supply partner for the demand partner",
+            "schema": {
+              "$ref": "#/definitions/RouterConfigurationResponse"
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/parameters/dpId"
+          },
+          {
+            "$ref": "#/parameters/spId"
+          },
+          {
+            "name": "supplyPartner",
+            "in": "body",
+            "description": "the properties of the supply partner to be created",
+            "schema": {
+              "$ref": "#/definitions/DemandPartnerConfigurationRequest"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "demand-partner"
+        ],
+        "summary": "Add a new supply configuration for demand partner",
+        "description": "Configures a new supply configuration for the demand partner\n",
+        "responses": {
+          "200": {
+            "description": "Successfully added a new supply partner for demand partner",
+            "schema": {
+              "$ref": "#/definitions/CreateRouterConfigurationResponse"
+            }
+          },
+          "400": {
+            "description": "There was a validation, input or processing error",
+            "schema": {
+              "$ref": "#/definitions/Errors"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "CreateDemandPartnerRequest": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "DemandPartnerResponse": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "description": "UUID format"
+        }
+      }
+    },
+    "CreateSupplyPartnerRequest": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "SupplyPartnerResponse": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "DemandPartnerConfigurationRequest": {
+      "properties": {
+        "maxQps": {
+          "type": "integer"
+        },
+        "configEndpoint": {
+          "$ref": "#/definitions/Url"
+        }
+      }
+    },
+    "Url": {
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
+    },
+    "CreateRouterConfigurationResponse": {
+      "description": "This is returned when creating a new configuration because a new Version is automatically created and associated to the new configuration.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "dpId": {
+          "type": "string"
+        },
+        "spId": {
+          "type": "string"
+        },
+        "maxQps": {
+          "type": "integer"
+        },
+        "configEndpoint": {
+          "$ref": "#/definitions/Url"
+        }
+      }
+    },
+    "RouterConfigurationResponse": {
+      "description": "This is returned when querying for a configuration which may be associated with many Version objects. .",
+      "properties": {
+        "dpId": {
+          "type": "string"
+        },
+        "spId": {
+          "type": "string"
+        },
+        "configEndpoint": {
+          "$ref": "#/definitions/Url"
+        }
+      }
+    },
+    "Errors": {
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Error"
+          }
+        }
+      }
+    },
+    "ErrorSimple": {
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Descriptive details of the error. Should not be parsed or referenced in programs, intended for human consumption. Use the HTTP response code."
+        },
+        "cause": {
+          "description": "simple cause is just a string.",
+          "type": "string"
+        }
+      }
+    },
+    "Error": {
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Descriptive details of the error. Should not be parsed or referenced in programs, intended for human consumption. Use the HTTP response code."
+        },
+        "cause": {
+          "description": "more complex cause is sent as an object.",
+          "properties": {
+            "expectedType": {
+              "type": "string"
+            },
+            "actual": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

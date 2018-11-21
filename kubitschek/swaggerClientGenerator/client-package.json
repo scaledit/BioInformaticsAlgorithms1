@@ -1,0 +1,12 @@
+{
+  "name": "rules-api-client",
+  "version": "1.0.2",
+  "description": "This is the Angular Client JS file from a Swagger api.json file.\n",
+  "main": "RulesApiSwaggerAngularClient.js",
+  "keywords": [
+    "swagger"
+  ],
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {"registry": "http://ntoggle.artifactoryonline.com/ntoggle/api/npm/UI" }
+}

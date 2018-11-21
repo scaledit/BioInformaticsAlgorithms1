@@ -1,0 +1,2025 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "1.0.0",
+        "title": "nToggle API",
+        "description": "<p class=\"message-fail\">This is a BETA release, and is subject to change.</p>\n\n The nToggle API is used to manage rule configuration and provisioning for the nToggle service.\n - The API provides secure RESTful endpoints, via HTTPS \n - Authentication and Authorization is implemented using the  OAuth 2.0 framework\n - Request and response payloads are formatted as JSON \n\n\n #Setup\nOnce a partner is provisioned in the system they will be provided with a `username` and `password` for the API. Additional user details can be accessed via the `/user` endpont (including the id and name of your provisioned organization).  The provisioned supply partners for the authorized account can be returned from the `/user/configuration/demand-partner` endpoint, which includes the supply partner identifiers (or `spId`'s).\n\n #Using the API\n When using the API, you work with a “version”, which is a collection of rules.  A version can be created empty (with no existing rules) or an existing version can be copied (in which case all it’s rules will be copied into the new version).  Before being published, you can continue to create, replace, or remove rules from a “version”.  Once published, a version becomes immutable, and will need to be copied before any changes can be made.\n\n The high level steps for working with the API is as follows&#58;\n 1. Authenticate and generate an OAuth token.  This will need to be applied as an `Authorization` HTTP header to all endpoint requests.\n 1. Access the `/user/configuration/demand-partner` endpoint to obtain the `spId`'s (supply partners identifier) that the user is provisioned to work with\n 1. Create or copy an existing version\n 1. Save or update rule configurations\n 1. Publish the configuration version\n\n\n Additional endpoints are provided to help making the API easier to use, and to integrate into custom user interfaces.\n"
+    },
+    "host" : "localhost:9000",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/api/v1",
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "parameters": {
+        "limit": {
+            "name": "limit",
+            "in": "query",
+            "description": "the maximum number of items to be returned.",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": 100
+        },
+        "offset": {
+            "name": "offset",
+            "in": "query",
+            "description": "the offset from the start of the list to be returned.",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+        },
+        "spIdInQuery": {
+            "name": "spId",
+            "in": "query",
+            "description": "the supply partner id",
+            "required": false,
+            "type": "string",
+            "format": "uuid"
+        },
+        "trafficTypeInQuery": {
+            "name": "trafficType",
+            "in": "query",
+            "description": "the type of traffic for the supply",
+            "required": false,
+            "type": "string",
+            "enum": [
+                "desktop",
+                "mobile"
+            ]
+        },
+        "spIdInQueryRequired": {
+            "name": "spId",
+            "in": "query",
+            "description": "the supply partner id",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+        },
+        "userListId": {
+            "name": "userListId",
+            "in": "path",
+            "description": "the user list id",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+        },
+        "userListName": {
+            "name": "userListName",
+            "in": "path",
+            "description": "the user list name",
+            "required": true,
+            "type": "string"
+        },
+        "ruleId": {
+            "name": "ruleId",
+            "in": "path",
+            "description": "the rule id",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+        },
+        "versionId": {
+            "name": "versionId",
+            "in": "path",
+            "description": "the configuration version",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+        },
+        "dpId": {
+            "name": "dpId",
+            "in": "path",
+            "description": "the demand partner id",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+        },
+        "spId": {
+            "name": "spId",
+            "in": "path",
+            "description": "the supply partner id",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+        },
+        "trafficType": {
+            "name": "trafficType",
+            "in": "path",
+            "description": "supply partner traffic type",
+            "required": true,
+            "type": "string"
+        }
+    },
+    "paths": {
+        "/oauth2/token": {
+            "post": {
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "Authenticate",
+                "description": "Implements the [OAuth2 token request](http://tools.ietf.org/html/rfc6749#section-4.3.2) for a `password` grant type.  Once the token has been generated, it needs to be included in all requests as a [Bearer token](http://tools.ietf.org/html/rfc6750#section-6.1.1) in the Authorization HTTP header, i.e. \n\n`Authorization: Bearer G9ybXBhdGguY29tL3YxL2FwcGxpY2F0aW9ucy81azR3WVRIQ1dlRHhGU2NsM2gxaEpZIiwic3ViIjoiaHR0cHM6Ly9hcGkuc3Rvcm1wYXRoLmNvbS92MS9hY2NvdW50cy9EMDdNZE1IaXRwYk9Edm8yUlI4ZGgiLCJleHAiOjE0NDM4MTE0ODQsInJ0aSI6IjI1UFJRTGltOWRydnlPbXh0NHlBeWUifQ.HLm6GLX00bycXHMNHYvnRSkVIttjgdlt1VP6mvDGnTw`\n\n Using the `refreshToken` is NOT currently supported.  Please note that this endpoint follows the OAuth2 standard and uses a form-urlencoded POST rather than JSON.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "username - provided as part of provisioning",
+                        "required": true
+                    },
+                    {
+                        "name": "password",
+                        "in": "formData",
+                        "type": "string",
+                        "format": "password",
+                        "description": "password - provided as part of provisioning",
+                        "required": true
+                    },
+                    {
+                        "name": "grant_type",
+                        "in": "formData",
+                        "type": "string",
+                        "default": "password",
+                        "description": "currently we only support the `password` grant_type",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A token has been generated",
+                        "schema": {
+                            "$ref": "#/definitions/OAuth2Token"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/user": {
+            "get": {
+                "tags": [
+                    "account"
+                ],
+                "summary": "User details",
+                "description": "Provides details about the current authenticated user, including basic information, preferences, and meta data required for subsequent API calls.",
+                "responses": {
+                    "200": {
+                        "description": "The authentication user details",
+                        "schema": {
+                            "$ref": "#/definitions/AuthorizedUser"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/user/configuration/demand-partner": {
+            "get": {
+                "tags": [
+                    "account"
+                ],
+                "summary": "User configuration",
+                "description": "The provisioned supply sources for the current authenticated user.",
+                "responses": {
+                    "200": {
+                        "description": "The authentication user configuration",
+                        "schema": {
+                            "$ref": "#/definitions/DemandConfiguration"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/demand-partners/{dpId}/user-lists": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/dpId"
+                    },
+                    {
+                        "$ref": "#/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/parameters/limit"
+                    }
+                ],
+                "tags": [
+                    "demand-partner"
+                ],
+                "summary": "View userlists for currently logged in demand partner.",
+                "description": "View userlists for currently logged in demand partner.\n",
+                "responses": {
+                    "200": {
+                        "description": "All the versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/UserList"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/demand-partners/{dpId}/user-lists/{userListId}": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/dpId"
+                    },
+                    {
+                        "$ref": "#/parameters/userListId"
+                    }
+                ],
+                "tags": [
+                    "demand-partner"
+                ],
+                "summary": "View specified userlist",
+                "description": "View userlist details\n",
+                "responses": {
+                    "200": {
+                        "description": "userlist details.",
+                        "schema": {
+                            "$ref": "#/definitions/UserList"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    },
+                    "404": {
+                        "description": "The specified user list was not found"
+                    }
+                }
+            }
+        },
+        "/versions": {
+            "get": {
+                "tags": [
+                    "versions"
+                ],
+                "summary": "List versions",
+                "description": "List all versions that match specified parameters, restricting results to only those versions that the user is authorized to view (i.e. matching the demand partners, supply partners, and supply types for the user). The list is ordered by `published` date, 'modified' date and 'created' date in descending order so that unpublished versions are first in the list.",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spIdInQuery"
+                    },
+                    {
+                        "$ref": "#/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/parameters/offset"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All the versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/create": {
+            "post": {
+                "parameters": [
+                    {
+                        "name": "createVersion",
+                        "in": "body",
+                        "description": "The configuration information for the version",
+                        "schema": {
+                            "$ref": "#/definitions/VersionCreateRequest"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Create version",
+                "description": "Create an empty version (i.e. with no prior rules).",
+                "responses": {
+                    "200": {
+                        "description": "Summary of the version",
+                        "schema": {
+                            "$ref": "#/definitions/EmptyVersionSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/summary/{versionId}": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Get version details",
+                "description": "Get the version details, along with rule summary information.",
+                "responses": {
+                    "200": {
+                        "description": "Version details",
+                        "schema": {
+                            "$ref": "#/definitions/VersionSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified version was not found"
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/{versionId}/qps": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    },
+                    {
+                        "name": "qps",
+                        "in": "body",
+                        "description": "The new QPS details for the version and all rules.",
+                        "schema": {
+                            "$ref": "#/definitions/VersionQps"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Update QPS",
+                "description": "Update the max QPS for the version, and the desired QPS for rules specified version",
+                "responses": {
+                    "200": {
+                        "description": "Version details",
+                        "schema": {
+                            "$ref": "#/definitions/VersionSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified version was not found"
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/{versionId}/copy": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Copy version",
+                "description": "Make a copy of the specified version.  The new version will be unpublished. It will include a copy of all the rules, and will have the maximum QPS and desired rules QPS assigned.",
+                "responses": {
+                    "200": {
+                        "description": "Version details",
+                        "schema": {
+                            "$ref": "#/definitions/VersionSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified version was not found"
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/{versionId}/publish": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    }
+                ],
+                "tags": [
+                    "publish"
+                ],
+                "summary": "Publish version",
+                "description": "Publish the specified version to be available to the provisioned nRoute(s). Publishing will not make the version active immediately, the nRoute(s) will still need to load and activate their configuration.  The version summary for the version published will be returned.",
+                "responses": {
+                    "200": {
+                        "description": "The version summary that was published",
+                        "schema": {
+                            "$ref": "#/definitions/VersionSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified version was not found"
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/{versionId}/rule/add": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    },
+                    {
+                        "name": "rule",
+                        "in": "body",
+                        "description": "The rule to be created",
+                        "schema": {
+                            "$ref": "#/definitions/InsertOrUpdateRule"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Add rule",
+                "description": "Add a new rule on the specified version.\n",
+                "responses": {
+                    "200": {
+                        "description": "New rule",
+                        "schema": {
+                            "$ref": "#/definitions/Rule"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    },
+                    "404": {
+                        "description": "The version does not exist"
+                    }
+                }
+            }
+        },
+        "/versions/{versionId}/rule/{ruleId}/replace": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    },
+                    {
+                        "$ref": "#/parameters/ruleId"
+                    },
+                    {
+                        "name": "rule",
+                        "in": "body",
+                        "description": "The rule to be modified",
+                        "schema": {
+                            "$ref": "#/definitions/InsertOrUpdateRule"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Replace rule",
+                "description": "Replace the specified rule on the specified version.  The returned result will contain the new rule (with a different identifier).\n",
+                "responses": {
+                    "200": {
+                        "description": "New version of the rule.",
+                        "schema": {
+                            "$ref": "#/definitions/Rule"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/versions/{versionId}/rule/{ruleId}/remove": {
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/versionId"
+                    },
+                    {
+                        "$ref": "#/parameters/ruleId"
+                    }
+                ],
+                "tags": [
+                    "versions"
+                ],
+                "summary": "Remove rule",
+                "description": "Remove the specified rule on the specified version.\n",
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    },
+                    "404": {
+                        "description": "The rule could not be found"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/traffic-type/{trafficType}/forecast":{
+            "post":{
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "$ref": "#/parameters/trafficType"
+                    },
+                    {
+                        "name": "ruleConditions",
+                        "in": "body",
+                        "description": "Rule Conditions in which to forecast",
+                        "schema": {
+                            "$ref": "#/definitions/RuleConditions"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "browse"
+                ],
+                "summary": "Forecast estimated toggled QPS",
+                "description": "Gives an estimate of the toggled QPS given a set of rule conditions.\n",
+                "responses": {
+                    "200": {
+                        "description" : "the estimatedQPS",
+                        "schema": {
+                            "$ref": "#/definitions/Forecast"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+
+        },
+        "/supply-partners/{spId}/features": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "attr",
+                        "in": "query",
+                        "description": "the attribute name to search for the feature in",
+                        "type": "string",
+                        "enum": [
+                            "carrier",
+                            "handset",
+                            "os",
+                            "appAndSite",
+                            "country",
+                            "region",
+                            "city",
+                            "zip"
+                        ],
+                        "required": true
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "the partial feature name to search for",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "the maximum number of items to be returned.",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 10
+                    },
+                    {
+                        "name": "trafficType",
+                        "in": "query",
+                        "description": "the type of traffic.",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "mobile",
+                            "desktop"
+                        ]
+                    }
+                ],
+                "tags": [
+                    "browse"
+                ],
+                "summary": "Attribute feature search",
+                "description": "Search for feature matches based on a partial feature string and an attribute name.  The attributes that are avilable to search for feature values are: `carrier`, `handset`, `os`, `appAndSite`, `country`, `region`, `city`, and `zip`",
+                "responses": {
+                    "200": {
+                        "description": "The feature matches in the attribute for the provided search string",
+                        "schema": {
+                            "$ref": "#/definitions/FeatureList"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/app": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of App data",
+                "description": "Return the validated and formatted list of App values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted App data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/carrier": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of Carrier data",
+                "description": "Return the validated and formatted list of Carrier values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted Carrier data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/city": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of City data",
+                "description": "Return the validated and formatted list of City values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted City data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/country": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of Country data",
+                "description": "Return the validated and formatted list of Country values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted Country data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/handset": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of HandsetId data",
+                "description": "Return the validated and formatted list of HandsetId values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted HandsetId data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/os": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of OS data",
+                "description": "Return the validated and formatted list of OS values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted OS data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/region": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of Region data",
+                "description": "Return the validated and formatted list of Region values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted Region data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/supply-partners/{spId}/features/validate/zip": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/spId"
+                    },
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "description": "bulk load data to validate",
+                        "schema": {
+                            "$ref": "#/definitions/BulkLoadData"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "validate"
+                ],
+                "summary": "Validate bulk load list of Zip data",
+                "description": "Return the validated and formatted list of Zip values for use in RuleCondition.",
+                "responses": {
+                    "200": {
+                        "description": "The formatted Zip data and validation errors.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidatedBulkData"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    }
+                }
+            }
+        },
+        "/rules/{ruleId}": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/ruleId"
+                    }
+                ],
+                "tags": [
+                    "browse"
+                ],
+                "summary": "View rule",
+                "description": "Return the rule for the specified `ruleId`. The list of possible rule conditions are: `trafficType`, `ipAddress`, `deviceId`, `carrier`, `handset`, `os`, `wifi`, `appAndSite`, `latlong`, `adSize`, `banner`, `mraid`, `interstitial`, `video`, `native`, `latlong`, `country`, `region`, `city`, and `zip`.",
+                "responses": {
+                    "200": {
+                        "description": "The requested rule",
+                        "schema": {
+                            "$ref": "#/definitions/Rule"
+                        }
+                    },
+                    "400": {
+                        "description": "There was a validation, input or processing error",
+                        "schema": {
+                            "$ref": "#/definitions/Errors"
+                        }
+                    },
+                    "401": {
+                        "description": "The user was not authenticated"
+                    },
+                    "404": {
+                        "description": "The rule could not be found"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "VersionQps": {
+            "properties": {
+                "maxQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the maximum QPS allowed for all rules for this supplier"
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RuleQps"
+                    }
+                }
+            },
+            "required": [ "maxQps", "rules" ],
+            "example": {
+                "maxQps": 45000,
+                "rules": [
+                    {
+                        "id": "a066918f-bf27-4b63-b666-b407513581e9",
+                        "desiredQps": 34000},
+                    {
+                        "id": "3f214842-6b16-483f-b49f-d152e01c6e33",
+                        "desiredQps": 7000}
+                ]
+            }
+        },
+        "RuleQps": {
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The rule id that the desired QPS is to be updated on"
+                },
+                "desiredQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The user desired QPS for this rule"
+                }
+            },
+            "required": [ "id", "desiredQps" ]
+        },
+        "VersionCreateRequest": {
+            "properties": {
+                "spId": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "maxQps": {
+                    "type": "integer"
+                }
+            },
+            "required": [ "spId", "maxQps"],
+            "example": {
+                "spId": "b6c4afaa-c66d-4a9a-8662-68185313811f",
+                "maxQps": 20000
+            }
+        },
+        "VersionSummary": {
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique version id"
+                },
+                "dpId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "the demand partner id"
+                },
+                "spId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "the supply partner id"
+                },
+                "created" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the rule was created, in milli-seconds"
+                },
+                "modified" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the rule was modified, in milli-seconds"
+                },
+                "published": {
+                    "type": "integer",
+                    "description": "Present only when this version has been published, and provides the date the rule was published, in milli-seconds"
+                },
+                "maxQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the maximum QPS allowed for all rules for this supplier"
+                },
+                "availableQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the QPS from the supplier"
+                },
+                "requests": {
+                    "$ref": "#/definitions/Counts"
+                },
+                "bids": {
+                    "$ref": "#/definitions/Counts"
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VersionRuleSummary"
+                    }
+                }
+            },
+            "required": ["id", "dpId", "spId", "created", "modified", "maxQps", "availableQps", "requests", "bids", "rules"],
+            "example": {
+                "id" : "02b716ec-8832-4ff4-929d-972fc8ab556d",
+                "dpId" : "bbfa36fd-d0cf-4a17-846e-785873a623ce",
+                "spId" : "b6c4afaa-c66d-4a9a-8662-68185313811f",
+                "created" : 1443808157423,
+                "modified" : 1443808157423,
+                "published" : 1443808159877,
+                "maxQps" : 20000,
+                "availableQps" : 45000,
+                "requests": {
+                    "oneHour": 500,
+                    "oneDay": 5000,
+                    "sevenDays": 25000
+                },
+                "bids": {
+                    "oneHour": 500,
+                    "oneDay": 5000,
+                    "sevenDays": 25000
+                },
+                "rules" : [
+                    {
+                        "id" : "04699354-eb25-4b3b-98df-0753a1bad251",
+                        "desiredQps" : 0,
+                        "created" : 1443808158179,
+                        "name" : "rule-kpisvuvxbs",
+                        "actuals": {
+                            "oneHour": 500,
+                            "oneDay": 5000,
+                            "sevenDays": 25000
+                        },
+                        "available": 32000
+                    },
+                    {
+                        "id" : "00256ee3-7097-469f-8fce-54084618c0ff",
+                        "desiredQps" : 0,
+                        "created" : 1443808158277,
+                        "name" : "rule-oybvbcpqet",
+                        "actuals": {
+                            "oneHour": 500,
+                            "oneDay": 5000,
+                            "sevenDays": 25000
+                        },
+                        "available": 32000
+                    }
+                ]
+            }
+        },
+        "RouterConfigurationId" : {
+            "properties": {
+                "dpId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "the demand partner id"
+                },
+                "spId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "the supply partner id"
+                }
+            }
+        },
+        "Version": {
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique version id"
+                },
+                "routerConfigurationId": {
+                    "$ref": "#/definitions/RouterConfigurationId"
+                },
+                "created" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the rule was created, in milli-seconds"
+                },
+                "modified" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the rule was modified, in milli-seconds"
+                },
+                "published": {
+                    "type": "integer",
+                    "description": "Present only when this version has been published, and provides the date the rule was published, in milli-seconds"
+                },
+                "maxQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the maximum QPS allowed for all rules for this supplier"
+                }
+            },
+            "required": ["id", "routerConfigurationId", "created", "modified", "maxQps"],
+            "example": {
+                "id" : "598a4c24-e2e3-44ff-811a-6534bce99f2e",
+                "routerConfigurationId" : {
+                    "dpId" : "0d1a63f2-3f45-4fb1-9237-0b7cfed3d11f",
+                    "spId" : "9a726b7f-e36a-441f-b83a-2581c0edfcd3"
+                },
+                "created" : 1448858710424,
+                "modified" : 1448859551354,
+                "published" : 1449000381006,
+                "maxQps" : 10005
+            }
+        },
+        "EmptyVersionSummary": {
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique version id"
+                },
+                "dpId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "the demand partner id"
+                },
+                "spId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "the supply partner id"
+                },
+                "created" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the version was created, in milli-seconds"
+                },
+                "modified" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the version was modified, in milli-seconds"
+                },
+                "published": {
+                    "type": "integer",
+                    "description": "Present only when this version has been published, and provides the date the rule was published, in milli-seconds"
+                },
+                "maxQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the maximum QPS allowed for all rules for this supplier"
+                },
+
+                "availableQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the fluctuating QPS from the supplier"
+                },
+                "requests": {
+                    "$ref": "#/definitions/Counts"
+                },
+                "bids": {
+                    "$ref": "#/definitions/Counts"
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VersionRuleSummary"
+                    }
+                }
+            },
+            "required": ["id", "dpId", "spId", "created", "modified", "maxQps", "availableQps", "requests", "bids", "rules"],
+            "example": {
+                "id" : "02b716ec-8832-4ff4-929d-972fc8ab556d",
+                "dpId" : "bbfa36fd-d0cf-4a17-846e-785873a623ce",
+                "spId" : "b6c4afaa-c66d-4a9a-8662-68185313811f",
+                "created" : 1443808157423,
+                "modified" : 1443808157423,
+                "maxQps" : 20000,
+                "availableQps": 0,
+                "requests": {
+                    "oneHour": 0,
+                    "oneDay": 0,
+                    "sevenDays": 0
+                },
+                "bids": {
+                    "oneHour": 0,
+                    "oneDay": 0,
+                    "sevenDays": 0
+                },
+                "rules" : []
+            }
+        },
+        "RuleConditionDefaultActionTypes": {
+            "type": "string",
+            "enum": [
+                "include",
+                "exclude"
+            ],
+            "description": "The default behavior of the condition: whether the attribute should include all feature values or exclude all feature values.  Once the default behavior is known, the `exceptions` property will list the exceptions to the default behavior, i.e. for country, if default is “exclude” and `exceptions` contains `US`, then all bid requests will be blocked except for those with a country of `US`. If the default was “include”, then all bid requests would be passed except for those with a country of `US`"
+        },
+        "RuleConditionUndefinedActionTypes": {
+            "type": "string",
+            "enum": [
+                "include",
+                "exclude"
+            ],
+            "description": "Sets what happens when the attribute is undefined, can be included or excluded"
+        },
+        "VersionRuleSummary": {
+            "description": "Rule summary, no conditions.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique rule id"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The user specified name for the rule"
+                },
+                "desiredQps": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The user desired QPS for this rule"
+                },
+                "actuals": {
+                    "$ref": "#/definitions/Counts"
+                },
+                "available": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "the QPS from the supplier for the rule"
+                },
+                "created" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the rule was created, in milli-seconds"
+                }
+            },
+            "required": [ "id", "name", "desiredQps", "actuals", "available", "created" ]
+        },
+        "Forecast":{
+            "description": "An estimation of toggled traffic",
+            "properties": {
+                "estimatedQPS": {
+                    "type": "integer"
+                }
+            }
+        },
+        "Counts": {
+            "description": "A specific metrics count details",
+            "properties": {
+                "oneHour": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "oneDay": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "sevenDays": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "Rule": {
+            "description": "A rule, which can relate to multiple versions.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "A unique identifier for the rule"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "a user specified name for the rule"
+                },
+                "created" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the rule was created, in milli-seconds"
+                },
+                "conditions": {
+                    "$ref" : "#/definitions/RuleConditions"
+                }
+            },
+            "required": ["id", "name", "created", "conditions"],
+            "example": {
+                "id" : "73d122b1-7e8b-427f-ac42-dffa89a180cd",
+                "name" : "rule-oybvbcpqet",
+                "created" : 1443808158065,
+                "conditions" : {
+                    "adSize" : {
+                        "default" : "exclude",
+                        "exceptions" : [ {
+                            "key" : "1024x768",
+                            "value" : "1024x768"
+                        } ],
+                        "undefined" : "exclude"
+                    },
+                    "country" : {
+                        "default" : "include",
+                        "exceptions" : [
+                            {
+                                "key" : "US",
+                                "value" : "United States of America"
+                            },
+                            {
+                                "key" : "AU",
+                                "value" : "Australia"
+                            }
+                        ],
+                        "undefined" : "exclude"
+                    }
+                }
+            }
+        },
+        "RuleConditions" : {
+            "description" : "The conditions that can be applied to a rule, all are optional",
+            "properties": {
+                "trafficType": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "ipAddress": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "deviceId": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "adSize": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "banner": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "mraid": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "interstitial": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "video": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "native": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "appAndSite": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "latlong": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "carrier": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "city": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "country": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "handset": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "region": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "wifi": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "zip": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                }
+            }
+        },
+        "RuleConditionDetail" : {
+            "properties" : {
+                "default": {
+                    "$ref": "#/definitions/RuleConditionDefaultActionTypes"
+                },
+                "undefined": {
+                    "$ref": "#/definitions/RuleConditionUndefinedActionTypes"
+                },
+                "exceptions": {
+                    "type": "array",
+                    "description": "A list of attribute features for the rule, whose behavior is defined by the `default` property",
+                    "items": {
+                        "$ref" : "#/definitions/Feature"
+                    }
+                }
+            },
+            "required": ["default", "undefined", "exceptions"]
+        },
+        "RuleConditionDetailsRequest" : {
+            "properties" : {
+                "default": {
+                    "$ref": "#/definitions/RuleConditionDefaultActionTypes"
+                },
+                "undefined": {
+                    "$ref": "#/definitions/RuleConditionUndefinedActionTypes"
+                },
+                "exceptions": {
+                    "type": "array",
+                    "description": "A list of attribute features for the rule, whose behavior is defined by the `default` property",
+                    "items": {
+                        "type":"string"
+                    }
+                }
+            }
+        },
+        "FeatureList" : {
+            "description": "",
+            "properties": {
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Feature",
+                        "description": "This is the list of specific features available for a specified Attribute and partial feature string"
+                    }
+                }
+            },
+            "required": [ "features" ],
+            "example": {
+                "features": [
+                    {
+                        "key": "US",
+                        "value": "United States of America"
+                    },
+                    {
+                        "key": "AU",
+                        "value": "Australia"
+                    }
+                ]
+            }
+        },
+        "Feature": {
+            "description": "A feature value that includes a key and label value pair",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "The supply-specific value/key for the attribute feature, this key will be used to toggled the bid stream"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "A user-friendly name or label for the key"
+                }
+            },
+            "required": [ "key", "value" ]
+        },
+        "InsertOrUpdateRule": {
+            "description": "The rule data to be created or updated (when updating a `id` property is present)",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "conditions": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditions"
+                }
+            },
+            "required": [ "name", "conditions"],
+            "example": {
+                "name" : "rule-oybvbcpqet",
+                "conditions" : {
+                    "adSize" : {
+                        "default" : "exclude",
+                        "exceptions" : [ "1024x768", "1024x768" ],
+                        "undefined" : "exclude"
+                    },
+                    "country" : {
+                        "default" : "include",
+                        "exceptions" : [ "US", "AU" ],
+                        "undefined" : "exclude"
+                    }
+                }
+            }
+        },
+        "InsertOrUpdateRuleConditions" : {
+            "description" : "The conditions that can be applied to a rule, all are optional",
+            "properties": {
+                "adSize": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "trafficType": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "ipAddress": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "deviceId": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "banner": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "mraid": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "interstitial": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "video": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "native": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "appAndSite": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "latlong": {
+                    "$ref" : "#/definitions/RuleConditionDetail"
+                },
+                "carrier": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "city": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "country": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "handset": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "region": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "wifi": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                },
+                "zip": {
+                    "$ref" : "#/definitions/InsertOrUpdateRuleConditionDetail"
+                }
+            }
+        },
+        "InsertOrUpdateRuleConditionDetail" : {
+            "properties" : {
+                "default": {
+                    "$ref": "#/definitions/RuleConditionDefaultActionTypes"
+                },
+                "undefined": {
+                    "$ref": "#/definitions/RuleConditionUndefinedActionTypes"
+                },
+                "exceptions": {
+                    "type": "array",
+                    "description": "A list of attribute features for the rule, whose behavior is defined by the `default` property",
+                    "items": {
+                        "type" : "string"
+                    }
+                }
+            },
+            "required": ["default", "undefined", "exceptions"]
+        },
+        "OAuth2Token": {
+            "description": "The token information for authentication",
+            "properties": {
+                "accessToken": {
+                    "type": "string",
+                    "format": "byte",
+                    "description": "The token to provide in the `Authorization` header for all secured requests"
+                },
+                "refreshToken": {
+                    "type": "string",
+                    "format": "byte",
+                    "description": "Not currently implemented, returned as part of the OAuth2 spec"
+                },
+                "tokenType": {
+                    "type": "string"
+                },
+                "expiresInSec": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The duration that the token will be valid, before another token needs to be requested"
+                }
+            },
+            "required": [ "accessToken", "refreshToken", "tokenType", "expiresInSec" ],
+            "example": {
+                "accessToken": "G9ybXBhdGguY29tL3YxL2FwcGxpY2F0aW9ucy81azR3WVRIQ1dlRHhGU2NsM2gxaEpZIiwic3ViIjoiaHR0cHM6Ly9hcGkuc3Rvcm1wYXRoLmNvbS92MS9hY2NvdW50cy9EMDdNZE1IaXRwYk9Edm8yUlI4ZGgiLCJleHAiOjE0NDM4MTE0ODQsInJ0aSI6IjI1UFJRTGltOWRydnlPbXh0NHlBeWUifQ.HLm6GLX00bycXHMNHYvnRSkVIttjgdlt1VP6mvDGnTw",
+                "refreshToken": "G9ybXBhdGguY29tL3YxL2FwcGxpY2F0aW9ucy81azR3WVRIQ1dlRHhGU2NsM2gxaEpZIiwic3ViIjoiaHR0cHM6Ly9hcGkuc3Rvcm1wYXRoLmNvbS92MS9hY2NvdW50cy9EMDdNZE1IaXRwYk9Edm8yUlI4ZGgiLCJleHAiOjE0NDg5OTE4ODR9.tS2gt2mQNG3NTTa8Mh1QkOKRYi8d6pMevvXNcUo61Og",
+                "tokenType": "Bearer",
+                "expiresInSec": 3600
+            }
+        },
+        "AuthorizedUser": {
+            "description":"details about the user that is current authenticated",
+            "properties": {
+                "username": {
+                    "type":"string"
+                },
+                "email": {
+                    "type":"string"
+                },
+                "fullname": {
+                    "type":"string"
+                },
+                "preferences": {
+                    "$ref": "#/definitions/UserPreferences"
+                },
+                "organization": {
+                    "$ref": "#/definitions/Organization"
+                }
+            },
+            "required": [ "username", "email", "fullname", "preferences", "organization" ],
+            "example": {
+                "username" : "test",
+                "email" : "test@ntoggle.com",
+                "fullname" : "Test Test",
+                "preferences" : {
+                    "language" : "en-US",
+                    "timezone" : "America/New_York"
+                },
+                "organization" : {
+                    "id": {
+                        "dpId" : "0d1a63f2-3f45-4fb1-9237-0b7cfed3d11f"
+                    },
+                    "name": "partner 1"
+                }
+            }
+        },
+        "Organization": {
+            "description": "Information about the organization that the user belongs to.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "enum": [
+                        "dpId",
+                        "spId"
+                    ],
+                    "description": "the unique identified for the organization"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "the name of the organization"
+                }
+            }
+        },
+        "DemandConfiguration": {
+            "description": "Configuration information for the demand side",
+            "properties": {
+                "supplyPartners": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SupplyPartner"
+                    }
+                }
+            },
+            "required": [ "supplyPartners"],
+            "example": {
+                "supplyPartners": [
+                    {
+                        "id": "9a726b7f-e36a-441f-b83a-2581c0edfcd3",
+                        "name": "Exchange One"
+                    },
+                    {
+                        "id": "3f214842-6b16-483f-b49f-d152e01c6e33",
+                        "name": "Exchange Two"
+                    }
+                ]
+            }
+        },
+        "SupplyPartner": {
+            "description": "Information about a supply partner",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": ["id", "name"]
+        },
+        "DemandPartner": {
+            "description": "Information about a demand partner",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": ["id", "name"]
+        },
+        "UserList": {
+            "description":"details about the userlist",
+            "properties": {
+                "name": {
+                    "type":"string"
+                },
+                "id": {
+                    "type":"string",
+                    "format": "uuid"
+                },
+                "dpId": {
+                    "type":"string",
+                    "format": "uuid"
+                },
+                "created" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the UserList was created, in milli-seconds"
+                },
+                "modified" : {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The date the UserList was modified, in milli-seconds"
+                }
+            },
+            "required": [ "id", "dpId", "name", "created", "modified" ],
+            "example": {
+                "id": "1f27a069-0701-4939-974a-8448afa37062",
+                "dpId" : "b20195b1-7811-4e4d-bdc3-f81943654564",
+                "name" : "test",
+                "created" : 1443808158065,
+                "modified" : 1443808158065
+            }
+        },
+        "UserPreferences": {
+            "description":"preferences for the user",
+            "properties": {
+                "language": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            },
+            "required": ["language", "timezone"]
+        },
+        "BulkLoadData": {
+            "description":"Bulk data to be formatted for use in RuleCondition.",
+            "properties": {
+                "data" : {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["data"],
+            "example" : {
+                "data" : ["US", "CA", "UK"]
+            }
+        },
+        "ValidatedBulkData": {
+            "description":"Bulk data formatted to use in RuleCondition.",
+            "properties": {
+                "parsedItems" : {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ParsedItem"
+                    }
+                },
+                "failedItems" : {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FailedItem"
+                    }
+                }
+            },
+            "required": ["parsedItems", "failedItems"]
+        },
+        "ParsedItem": {
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "FailedItem": {
+            "properties": {
+                "item": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "Errors": {
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Error"
+                    }
+                }
+            }
+        },
+        "Error": {
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "Descriptive details of the error. Should not be parsed or referenced in programs, intended for human consumption. Use the HTTP response code."
+                },
+                "cause": {
+                    "description" : "more complex cause is sent as an object",
+                    "properties" : {
+                        "expectedType" : {
+                            "type" : "string"
+                        },
+                        "actual" : {
+                            "type" : "string"
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+}
+

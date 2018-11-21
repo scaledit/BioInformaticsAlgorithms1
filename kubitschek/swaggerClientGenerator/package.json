@@ -1,0 +1,15 @@
+{
+  "name": "rules-api-client-builder",
+  "version": "1.0.0",
+  "description": "This is the tool to generate an Angular Service from a Swagger api.json file.\n",
+  "main": "app.js",
+  "keywords": [
+    "swagger"
+  ],
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "swagger-js-codegen": "1.1.4"
+  },
+  "publishConfig": {"registry": "http://ntoggle.artifactoryonline.com/ntoggle/api/npm/UI" }
+}
